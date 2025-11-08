@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文本翻译 - 跨语通</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 统一的 Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#36BFFA',
+            dark: '#1D2129',
+            light: '#F2F3F5',
+            success: '#00B42A',
+            warning: '#FF7D00',
+            danger: '#F53F3F',
+            gray: {
+              100: '#F2F3F5',
+              200: '#E5E6EB',
+              300: '#C9CDD4',
+              400: '#86909C',
+              500: '#4E5969',
+              600: '#272E3B',
+              700: '#1D2129',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 4px 12px rgba(0, 0, 0, 0.05)',
+            'card-hover': '0 8px 16px rgba(0, 0, 0, 0.1)',
+          },
+          backgroundImage: {
+            'gradient-primary': 'linear-gradient(135deg, #165DFF 0%, #36BFFA 100%)',
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        background-image: linear-gradient(135deg, #165DFF 0%, #36BFFA 100%);
+      }
+      .bg-blur {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      .transition-all-300 {
+        transition: all 0.3s ease;
+      }
+      .hover-scale {
+        transition: transform 0.3s ease;
+      }
+      .hover-scale:hover {
+        transform: scale(1.03);
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    }
+  </style>
+  <style>
+    /* 自定义动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn 0.6s ease forwards;
+    }
+    
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+    
+    /* 滚动指示器 */
+    .scroll-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #165DFF, #36BFFA);
+      z-index: 100;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+    
+    /* 文件上传区域样式 */
+    .file-drop-area {
+      border: 2px dashed #C9CDD4;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .file-drop-area:hover, .file-drop-area.active {
+      border-color: #165DFF;
+      background-color: rgba(22, 93, 255, 0.05);
+    }
+    
+    .file-drop-area input {
+      display: none;
+    }
+    
+    /* 翻译进度条 */
+    .translation-progress {
+      height: 4px;
+      background-color: #E5E6EB;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    
+    .translation-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #165DFF, #36BFFA);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+      .translation-container {
+        flex-direction: column;
+      }
+      
+      .source-container, .result-container {
+        width: 100%;
+        margin-bottom: 1rem;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans text-gray-700 bg-gray-50">
+  <!-- 滚动指示器 -->
+  <div class="scroll-indicator" id="scrollIndicator"></div>
+
+  <!-- 1. 页面头部（Header） -->
+  <header class="header fixed top-0 left-0 right-0 bg-white bg-opacity-90 bg-blur z-50 shadow-sm">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <!-- 品牌Logo+名称 -->
+      <div class="header__logo flex items-center">
+        <a href="index.html" class="flex items-center">
+          <div class="text-primary text-2xl font-bold mr-1">跨语通</div>
+          <div class="hidden md:block text-gray-400">跨境电商智能翻译专家</div>
+        </a>
+      </div>
+      
+      <!-- 导航菜单（桌面版） -->
+      <nav class="hidden md:flex items-center space-x-8">
+        <a href="index.html" class="text-gray-600 hover:text-primary transition-all-300">首页</a>
+        <a href="index.html#features" class="text-gray-600 hover:text-primary transition-all-300">功能</a>
+        <a href="index.html#cases" class="text-gray-600 hover:text-primary transition-all-300">案例</a>
+        <a href="index.html#products" class="text-gray-600 hover:text-primary transition-all-300">产品</a>
+        <a href="index.html#advantages" class="text-gray-600 hover:text-primary transition-all-300">优势</a>
+        <a href="index.html#service" class="text-gray-600 hover:text-primary transition-all-300">服务</a>
+      </nav>
+      
+      <!-- 头部功能区 -->
+      <div class="header__action flex items-center">
+        <button class="btn btn--upgrade hidden md:block bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-full transition-all-300 mr-4">
+          升级套餐
+        </button>
+        <button class="btn btn--download hidden md:block bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-full transition-all-300 mr-4">
+          下载APP
+        </button>
+        <div class="header__user-icon cursor-pointer text-gray-600 hover:text-primary transition-all-300">
+          <i class="fa fa-user-circle text-xl"></i>
+        </div>
+        
+        <!-- 移动端菜单按钮 -->
+        <button class="md:hidden ml-4 text-gray-600 hover:text-primary transition-all-300" id="mobileMenuBtn">
+          <i class="fa fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- 移动端菜单 -->
+    <div class="md:hidden bg-white shadow-md absolute w-full left-0 top-full transform -translate-y-full opacity-0 transition-all-300 invisible" id="mobileMenu">
+      <div class="container mx-auto px-4 py-3">
+        <nav class="flex flex-col space-y-4 py-4">
+          <a href="index.html" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">首页</a>
+          <a href="index.html#features" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">功能</a>
+          <a href="index.html#products" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">产品</a>
+          <a href="index.html#advantages" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">优势</a>
+          <a href="index.html#service" class="text-gray-600 hover:text-primary transition-all-300 py-2">服务</a>
+        </nav>
+        <div class="flex flex-col space-y-3">
+          <button class="btn btn--upgrade w-full bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-full transition-all-300">
+            升级套餐
+          </button>
+          <button class="btn btn--download w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-full transition-all-300">
+            下载APP
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-16 pb-12">
+    <!-- 2. 页面标题区 -->
+    <section class="page-title py-8 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <div class="container mx-auto px-4">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-700">文本翻译</h1>
+        <p class="text-center text-gray-500 mt-2">支持多语言文本实时翻译和批量处理，适用于产品标题、描述、规格参数等场景</p>
+      </div>
+    </section>
+    
+    <!-- 3. 翻译工具栏 -->
+    <section class="translation-toolbar py-6 bg-white border-b border-gray-200">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-wrap items-center justify-between">
+          <div class="flex flex-wrap items-center gap-4 mb-4 md:mb-0">
+            <button class="bg-primary text-white px-4 py-2 rounded-lg flex items-center transition-all-300">
+              <i class="fa fa-edit mr-2"></i> 文本翻译
+            </button>
+            <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center transition-all-300">
+              <i class="fa fa-file-text-o mr-2"></i> 文档翻译
+            </button>
+            <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center transition-all-300">
+              <i class="fa fa-video-camera mr-2"></i> 音视频翻译
+            </button>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="relative">
+              <select id="sourceLanguage" class="appearance-none bg-white border border-gray-300 text-gray-700 px-4 py-2 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300">
+                <option value="auto">自动检测</option>
+                <option value="zh" selected>中文</option>
+                <option value="en">英语</option>
+                <option value="es">西班牙语</option>
+                <option value="fr">法语</option>
+                <option value="de">德语</option>
+                <option value="ja">日语</option>
+                <option value="ko">韩语</option>
+                <option value="ru">俄语</option>
+              </select>
+              <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <i class="fa fa-chevron-down text-gray-400"></i>
+              </div>
+            </div>
+            
+            <button id="swapLanguages" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 w-10 h-10 rounded-lg flex items-center justify-center transition-all-300">
+              <i class="fa fa-exchange"></i>
+            </button>
+            
+            <div class="relative">
+              <select id="targetLanguage" class="appearance-none bg-white border border-gray-300 text-gray-700 px-4 py-2 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300">
+                <option value="en" selected>英语</option>
+                <option value="zh">中文</option>
+                <option value="es">西班牙语</option>
+                <option value="fr">法语</option>
+                <option value="de">德语</option>
+                <option value="ja">日语</option>
+                <option value="ko">韩语</option>
+                <option value="ru">俄语</option>
+              </select>
+              <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <i class="fa fa-chevron-down text-gray-400"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 4. 翻译内容区 -->
+    <section class="translation-content py-8">
+      <div class="container mx-auto px-4">
+        <!-- 文本翻译区域 -->
+        <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn">
+          <h3 class="text-xl font-semibold text-gray-700 mb-4">文本翻译</h3>
+          
+          <div class="translation-container flex flex-col md:flex-row gap-6">
+            <!-- 源文本区域 -->
+            <div class="source-container flex-1">
+              <div class="flex justify-between items-center mb-2">
+                <label class="text-gray-700 font-medium">源文本</label>
+                <div class="flex items-center text-sm text-gray-500">
+                  <span id="charCount">0</span>
+                  <span>字符</span>
+                </div>
+              </div>
+              
+              <div class="border border-gray-300 rounded-lg overflow-hidden">
+                <textarea id="sourceText" class="w-full h-64 p-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300 resize-none" placeholder="请输入或粘贴需要翻译的文本..."></textarea>
+              </div>
+              
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button id="clearTextBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-all-300 flex items-center">
+                  <i class="fa fa-trash-o mr-1"></i> 清空
+                </button>
+                <button id="pasteTextBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-all-300 flex items-center">
+                  <i class="fa fa-paste mr-1"></i> 粘贴
+                </button>
+                <button id="sampleTextBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-all-300 flex items-center">
+                  <i class="fa fa-file-text-o mr-1"></i> 示例文本
+                </button>
+              </div>
+            </div>
+            
+            <!-- 翻译结果区域 -->
+            <div class="result-container flex-1">
+              <div class="flex justify-between items-center mb-2">
+                <label class="text-gray-700 font-medium">翻译结果</label>
+                <div class="flex items-center text-sm">
+                  <span id="translationStatus" class="text-gray-500 hidden">
+                    <i class="fa fa-spinner fa-spin mr-1"></i> 翻译中...
+                  </span>
+                  <span id="translationSuccess" class="text-success hidden">
+                    <i class="fa fa-check-circle mr-1"></i> 翻译完成
+                  </span>
+                </div>
+              </div>
+              
+              <div class="border border-gray-300 rounded-lg overflow-hidden">
+                <div id="translationResult" class="w-full h-64 p-4 bg-gray-50 focus:outline-none" placeholder="翻译结果将显示在这里..." contenteditable="true"></div>
+              </div>
+              
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button id="copyResultBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-all-300 flex items-center">
+                  <i class="fa fa-copy mr-1"></i> 复制
+                </button>
+                <button id="downloadResultBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-all-300 flex items-center">
+                  <i class="fa fa-download mr-1"></i> 下载
+                </button>
+                <button id="correctResultBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-all-300 flex items-center">
+                  <i class="fa fa-pencil mr-1"></i> 纠错
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 翻译进度条 -->
+          <div id="translationProgress" class="mt-4 hidden">
+            <div class="flex justify-between text-sm text-gray-500 mb-1">
+              <span>翻译进度</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="translation-progress">
+              <div class="translation-progress-bar" id="progressBar"></div>
+            </div>
+          </div>
+          
+          <div class="mt-6 flex justify-end">
+            <button id="translateTextBtn" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-all-300 flex items-center">
+              <i class="fa fa-language mr-2"></i> 开始翻译
+            </button>
+          </div>
+        </div>
+        
+        <!-- 翻译历史 -->
+        <div class="mt-8 bg-white rounded-xl shadow-card p-6 animate-fadeIn delay-200">
+          <h3 class="text-xl font-semibold text-gray-700 mb-4">翻译历史</h3>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">源文本</th>
+                  <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">翻译结果</th>
+                  <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">语言</th>
+                  <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
+                  <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">这款无线蓝牙耳机音质清晰，续航时间长达24小时</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">This wireless Bluetooth headset delivers clear sound quality with up to 24 hours of battery life</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">中文 → 英语</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-11-08 15:30</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button class="text-primary hover:text-primary/80 mr-3">
+                      <i class="fa fa-copy"></i>
+                    </button>
+                    <button class="text-gray-500 hover:text-gray-700">
+                      <i class="fa fa-star-o"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">我们的产品采用高品质材料，经久耐用</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">Our products are made of high-quality materials and are durable</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">中文 → 英语</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-11-08 14:15</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button class="text-primary hover:text-primary/80 mr-3">
+                      <i class="fa fa-copy"></i>
+                    </button>
+                    <button class="text-gray-500 hover:text-gray-700">
+                      <i class="fa fa-star"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">支持7天无理由退换货，让您购物无忧</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">Supports 7-day no-reason return and exchange, allowing you to shop with confidence</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">中文 → 英语</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-11-08 10:45</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button class="text-primary hover:text-primary/80 mr-3">
+                      <i class="fa fa-copy"></i>
+                    </button>
+                    <button class="text-gray-500 hover:text-gray-700">
+                      <i class="fa fa-star-o"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="mt-6 flex justify-center">
+            <nav class="inline-flex rounded-md shadow">
+              <a href="#" class="py-2 px-4 bg-white border border-gray-300 rounded-l-md text-gray-500 hover:bg-gray-50">
+                <i class="fa fa-chevron-left"></i>
+              </a>
+              <a href="#" class="py-2 px-4 bg-primary border border-primary text-white">1</a>
+              <a href="#" class="py-2 px-4 bg-white border border-gray-300 text-gray-500 hover:bg-gray-50">2</a>
+              <a href="#" class="py-2 px-4 bg-white border border-gray-300 text-gray-500 hover:bg-gray-50">3</a>
+              <a href="#" class="py-2 px-4 bg-white border border-gray-300 rounded-r-md text-gray-500 hover:bg-gray-50">
+                <i class="fa fa-chevron-right"></i>
+              </a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 5. 页脚（Footer） -->
+  <footer class="footer bg-gray-700 text-white py-12">
+    <div class="container mx-auto px-4">
+      <div class="footer__grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <!-- 列1：品牌介绍 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-xl font-bold mb-4">跨语通</h3>
+          <p class="footer__column-desc text-gray-300 mb-6">
+            AI驱动的跨境电商智能翻译工具，帮助中国卖家走向全球市场，提升产品转化率。
+          </p>
+          <div class="flex space-x-4">
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-weixin text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-weibo text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-linkedin text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-youtube-play text-xl"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- 列2：产品服务 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">产品服务</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="text-translation.html" class="footer__link text-gray-300 hover:text-white transition-all-300">文本翻译</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">文档翻译</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">视频翻译</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">人机翻译</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">行业解决方案</a></li>
+          </ul>
+        </div>
+        
+        <!-- 列3：代理与加盟 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">代理与加盟</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">代理与加盟</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">API开放平台</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">合作伙伴</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">渠道政策</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">市场支持</a></li>
+          </ul>
+        </div>
+        
+        <!-- 列4：资源 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">资源</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">帮助中心</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">跨境电商指南</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">API文档</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">术语表</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">视频教程</a></li>
+          </ul>
+        </div>
+        
+        <!-- 列5：关于我们 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">关于我们</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">公司介绍</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">联系方式</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">加入我们</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">隐私政策</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">服务条款</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- 版权信息 -->
+      <div class="footer__copyright border-t border-gray-600 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm mb-4 md:mb-0">©2023跨语通版权所有 | ICP备案号：粤ICP备123456号-1</p>
+        <a href="https://kuayutong.com" class="footer__website text-gray-400 hover:text-white text-sm transition-all-300" target="_blank">https://kuayutong.com</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 返回顶部按钮 -->
+  <button id="backToTop" class="fixed bottom-6 right-6 bg-primary hover:bg-primary/90 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all-300 opacity-0 invisible">
+    <i class="fa fa-chevron-up"></i>
+  </button>
+
+  <!-- JavaScript -->
+  <script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+      // 移动端菜单
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      
+      mobileMenuBtn.addEventListener('click', function() {
+        if (mobileMenu.classList.contains('invisible')) {
+          mobileMenu.classList.remove('invisible', '-translate-y-full', 'opacity-0');
+          mobileMenu.classList.add('translate-y-0', 'opacity-100');
+          mobileMenuBtn.innerHTML = '<i class="fa fa-times text-xl"></i>';
+        } else {
+          mobileMenu.classList.add('-translate-y-full', 'opacity-0');
+          mobileMenu.classList.remove('translate-y-0', 'opacity-100');
+          
+          // 延迟添加invisible类，等待过渡动画完成
+          setTimeout(() => {
+            mobileMenu.classList.add('invisible');
+          }, 300);
+          
+          mobileMenuBtn.innerHTML = '<i class="fa fa-bars text-xl"></i>';
+        }
+      });
+      
+      // 滚动指示器
+      const scrollIndicator = document.getElementById('scrollIndicator');
+      
+      window.addEventListener('scroll', function() {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        scrollIndicator.style.width = scrolled + '%';
+        
+        // 返回顶部按钮显示/隐藏
+        const backToTop = document.getElementById('backToTop');
+        if (winScroll > 300) {
+          backToTop.classList.remove('opacity-0', 'invisible');
+          backToTop.classList.add('opacity-100', 'visible');
+        } else {
+          backToTop.classList.add('opacity-0');
+          backToTop.classList.remove('opacity-100');
+          
+          // 延迟添加invisible类，等待过渡动画完成
+          setTimeout(() => {
+            if (winScroll <= 300) {
+              backToTop.classList.add('invisible');
+              backToTop.classList.remove('visible');
+            }
+          }, 300);
+        }
+      });
+      
+      // 返回顶部按钮点击事件
+      document.getElementById('backToTop').addEventListener('click', function() {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+      
+      // 语言交换按钮
+      const swapLanguagesBtn = document.getElementById('swapLanguages');
+      const sourceLanguage = document.getElementById('sourceLanguage');
+      const targetLanguage = document.getElementById('targetLanguage');
+      const sourceText = document.getElementById('sourceText');
+      const translationResult = document.getElementById('translationResult');
+      
+      swapLanguagesBtn.addEventListener('click', function() {
+        // 交换语言选择
+        const tempLang = sourceLanguage.value;
+        sourceLanguage.value = targetLanguage.value;
+        targetLanguage.value = tempLang;
+        
+        // 如果有翻译结果，也交换文本
+        if (translationResult.innerText.trim() !== '') {
+          const tempText = sourceText.value;
+          sourceText.value = translationResult.innerText;
+          translationResult.innerText = tempText;
+          
+          // 更新字符计数
+          updateCharCount();
+        }
+      });
+      
+      // 字符计数
+      function updateCharCount() {
+        const charCount = document.getElementById('charCount');
+        charCount.textContent = sourceText.value.length;
+      }
+      
+      sourceText.addEventListener('input', updateCharCount);
+      
+      // 清空文本按钮
+      const clearTextBtn = document.getElementById('clearTextBtn');
+      
+      clearTextBtn.addEventListener('click', function() {
+        sourceText.value = '';
+        translationResult.innerText = '';
+        updateCharCount();
+        
+        // 隐藏翻译状态
+        document.getElementById('translationStatus').classList.add('hidden');
+        document.getElementById('translationSuccess').classList.add('hidden');
+      });
+      
+      // 粘贴文本按钮
+      const pasteTextBtn = document.getElementById('pasteTextBtn');
+      
+      pasteTextBtn.addEventListener('click', function() {
+        navigator.clipboard.readText().then(text => {
+          sourceText.value = text;
+          updateCharCount();
+        }).catch(err => {
+          console.error('无法访问剪贴板: ', err);
+          alert('无法访问剪贴板，请手动粘贴。');
+        });
+      });
+      
+      // 示例文本按钮
+      const sampleTextBtn = document.getElementById('sampleTextBtn');
+      
+      sampleTextBtn.addEventListener('click', function() {
+        sourceText.value = '这款无线蓝牙耳机音质清晰，续航时间长达24小时，支持快充功能，兼容各种设备。采用 ergonomic 设计，佩戴舒适，适合长时间使用。支持蓝牙5.0技术，连接稳定，传输距离可达10米。内置高清麦克风，支持语音助手功能。';
+        updateCharCount();
+      });
+      
+      // 复制结果按钮
+      const copyResultBtn = document.getElementById('copyResultBtn');
+      
+      copyResultBtn.addEventListener('click', function() {
+        if (translationResult.innerText.trim() === '') {
+          alert('没有可复制的翻译结果。');
+          return;
+        }
+        
+        navigator.clipboard.writeText(translationResult.innerText).then(() => {
+          // 复制成功反馈
+          const originalText = copyResultBtn.innerHTML;
+          copyResultBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 已复制';
+          copyResultBtn.classList.add('bg-success', 'text-white');
+          copyResultBtn.classList.remove('bg-gray-100', 'text-gray-700');
+          
+          setTimeout(() => {
+            copyResultBtn.innerHTML = originalText;
+            copyResultBtn.classList.remove('bg-success', 'text-white');
+            copyResultBtn.classList.add('bg-gray-100', 'text-gray-700');
+          }, 2000);
+        });
+      });
+      
+      // 下载结果按钮
+      const downloadResultBtn = document.getElementById('downloadResultBtn');
+      
+      downloadResultBtn.addEventListener('click', function() {
+        if (translationResult.innerText.trim() === '') {
+          alert('没有可下载的翻译结果。');
+          return;
+        }
+        
+        const text = translationResult.innerText;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '翻译结果.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+      
+      // 纠错按钮
+      const correctResultBtn = document.getElementById('correctResultBtn');
+      
+      correctResultBtn.addEventListener('click', function() {
+        if (translationResult.innerText.trim() === '') {
+          alert('没有可纠错的翻译结果。');
+          return;
+        }
+        
+        // 模拟纠错功能
+        alert('纠错功能即将上线，敬请期待！');
+      });
+      
+      // 翻译文本按钮
+      const translateTextBtn = document.getElementById('translateTextBtn');
+      const translationStatus = document.getElementById('translationStatus');
+      const translationSuccess = document.getElementById('translationSuccess');
+      const translationProgress = document.getElementById('translationProgress');
+      const progressBar = document.getElementById('progressBar');
+      const progressPercent = document.getElementById('progressPercent');
+      
+      translateTextBtn.addEventListener('click', function() {
+        const text = sourceText.value.trim();
+        
+        if (text === '') {
+          alert('请输入需要翻译的文本。');
+          return;
+        }
+        
+        // 显示翻译状态
+        translationStatus.classList.remove('hidden');
+        translationSuccess.classList.add('hidden');
+        translationProgress.classList.remove('hidden');
+        
+        // 模拟翻译进度
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += 5;
+          progressBar.style.width = progress + '%';
+          progressPercent.textContent = progress + '%';
+          
+          if (progress >= 100) {
+            clearInterval(progressInterval);
+            
+            // 模拟翻译结果
+            setTimeout(() => {
+              translationStatus.classList.add('hidden');
+              translationSuccess.classList.remove('hidden');
+              
+              // 根据目标语言显示不同的翻译结果
+              const targetLang = targetLanguage.value;
+              let result = '';
+              
+              if (targetLang === 'en') {
+                result = 'This wireless Bluetooth headset delivers clear sound quality with up to 24 hours of battery life, supports fast charging, and is compatible with various devices. Adopting an ergonomic design, it is comfortable to wear and suitable for long-term use. It supports Bluetooth 5.0 technology, providing stable connection with a transmission distance of up to 10 meters. Built-in high-definition microphone supports voice assistant function.';
+              } else if (targetLang === 'es') {
+                result = 'Este auricular Bluetooth inalámbrico ofrece una calidad de sonido clara con hasta 24 horas de duración de batería, admite carga rápida y es compatible con varios dispositivos. Adopta un diseño ergonómico, es cómodo de usar y adecuado para un uso prolongado. Admite tecnología Bluetooth 5.0, proporcionando una conexión estable con una distancia de transmisión de hasta 10 metros. Micrófono integrado de alta definición que admite función de asistente de voz.';
+              } else if (targetLang === 'fr') {
+                result = 'Ce casque Bluetooth sans fil offre une qualité de sonorité claire avec une autonomie de batterie allant jusqu\'à 24 heures, prend en charge la charge rapide et est compatible avec divers appareils. Adoptant un design ergonomique, il est confortable à porter et adapté à une utilisation prolongée. Il prend en charge la technologie Bluetooth 5.0, offrant une connexion stable avec une distance de transmission allant jusqu\'à 10 mètres. Microphone haute définition intégré prenant en charge la fonction d\'assistant vocal.';
+              } else if (targetLang === 'de') {
+                result = 'Dieses kabellose Bluetooth-Headset bietet eine klare Tonqualität mit bis zu 24 Stunden Akkulaufzeit, unterstützt Schnellladung und ist mit verschiedenen Geräten kompatibel. Mit einem ergonomischen Design ist es angenehm zu tragen und für eine langfristige Nutzung geeignet. Es unterstützt Bluetooth 5.0-Technologie und bietet eine stabile Verbindung mit einer Übertragungsdistanz von bis zu 10 Metern. Eingebautes Hochpräzisionsmikrofon unterstützt die Sprachassistentenfunktion.';
+              } else if (targetLang === 'ja') {
+                result = 'このワイヤレスBluetoothヘッドセットは、最大24時間のバッテリー持続時間でクリアな音質を提供し、急速充電に対応し、様々なデバイスと互換性があります。人間工学に基づいたデザインを採用しているため、長時間使用しても快適です。Bluetooth 5.0技術をサポートし、最大10メートルの伝送距離で安定した接続を提供します。内蔵の高品質マイクで音声アシスタント機能をサポートします。';
+              } else if (targetLang === 'ko') {
+                result = '이 무선 블루투스 헤드셋은 최대 24시간 동안 배터리 수명으로 선명한 음질을 제공하며, 급속 충전을 지원하고 다양한 기기와 호환됩니다. 인체工学적 디자인을 채택하여 착용감이 좋고 장시간 사용에 적합합니다. 블루투스 5.0 기술을 지원하여 최대 10미터까지 안정적인 연결을 제공합니다. 내장 고품질 마이크로 음성 어시스턴트 기능을 지원합니다.';
+              } else if (targetLang === 'ru') {
+                result = 'Этот беспроводной гарнитура Bluetooth обеспечивает четкое звучание с временем работы батареи до 24 часов, поддерживает быструю зарядку и совместима с различными устройствами. Применяя эргономичный дизайн, он удобен в ношении и подходит для длительного использования. Поддерживает технологию Bluetooth 5.0, обеспечивая стабильное соединение на расстоянии передачи до 10 метров. Встроенный высококачественный микрофон поддерживает функцию голосового помощника.';
+              } else {
+                result = '这款无线蓝牙耳机音质清晰，续航时间长达24小时，支持快充功能，兼容各种设备。采用人体工学设计，佩戴舒适，适合长时间使用。支持蓝牙5.0技术，连接稳定，传输距离可达10米。内置高清麦克风，支持语音助手功能。';
+              }
+              
+              translationResult.innerText = result;
+            }, 500);
+          }
+        }, 100);
+      });
+      
+      // 文件上传区域
+      const fileDropArea = document.getElementById('fileDropArea');
+      const fileInput = document.getElementById('fileInput');
+      const fileList = document.getElementById('fileList');
+      const selectedFiles = document.getElementById('selectedFiles');
+      const translateFilesBtn = document.getElementById('translateFilesBtn');
+      
+      // 点击上传区域触发文件选择
+      fileDropArea.addEventListener('click', function() {
+        fileInput.click();
+      });
+      
+      // 拖拽文件到上传区域
+      fileDropArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileDropArea.classList.add('active');
+      });
+      
+      fileDropArea.addEventListener('dragleave', function() {
+        fileDropArea.classList.remove('active');
+      });
+      
+      fileDropArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileDropArea.classList.remove('active');
+        
+        if (e.dataTransfer.files.length > 0) {
+          handleFiles(e.dataTransfer.files);
+        }
+      });
+      
+      // 文件选择变化
+      fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+          handleFiles(this.files);
+        }
+      });
+      
+      // 处理选择的文件
+      function handleFiles(files) {
+        fileList.classList.remove('hidden');
+        selectedFiles.innerHTML = '';
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          
+          // 检查文件大小
+          if (file.size > 10 * 1024 * 1024) {
+            alert(`文件 "${file.name}" 超过10MB限制，请选择 smaller 文件。`);
+            continue;
+          }
+          
+          // 检查文件类型
+          const allowedTypes = ['.docx', '.xlsx', '.pdf', '.txt'];
+          const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+          
+          if (!allowedTypes.includes(fileExtension)) {
+            alert(`文件类型 "${fileExtension}" 不支持，请选择 .docx, .xlsx, .pdf 或 .txt 文件。`);
+            continue;
+          }
+          
+          // 创建文件项
+          const fileItem = document.createElement('div');
+          fileItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+          fileItem.innerHTML = `
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <i class="fa fa-file-${fileExtension === '.pdf' ? 'pdf' : fileExtension === '.docx' ? 'word' : fileExtension === '.xlsx' ? 'excel' : 'text'}-o"></i>
+              </div>
+              <div class="ml-3">
+                <p class="text-gray-700 font-medium">${file.name}</p>
+                <p class="text-gray-500 text-sm">${formatFileSize(file.size)}</p>
+              </div>
+            </div>
+            <button class="text-gray-400 hover:text-danger transition-all-300 remove-file" data-index="${i}">
+              <i class="fa fa-times"></i>
+            </button>
+          `;
+          
+          selectedFiles.appendChild(fileItem);
+        }
+        
+        // 显示翻译按钮
+        if (selectedFiles.children.length > 0) {
+          translateFilesBtn.classList.remove('hidden');
+        } else {
+          translateFilesBtn.classList.add('hidden');
+          fileList.classList.add('hidden');
+        }
+        
+        // 添加删除文件事件
+        document.querySelectorAll('.remove-file').forEach(button => {
+          button.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            this.closest('.flex.items-center.justify-between').remove();
+            
+            // 如果没有文件了，隐藏翻译按钮和文件列表
+            if (selectedFiles.children.length === 0) {
+              translateFilesBtn.classList.add('hidden');
+              fileList.classList.add('hidden');
+            }
+          });
+        });
+      }
+      
+      // 格式化文件大小
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+      
+      // 翻译文件按钮
+      translateFilesBtn.addEventListener('click', function() {
+        // 模拟文件翻译
+        alert('文件翻译功能即将上线，敬请期待！');
+      });
+    });
+  </script>
+</body>
+</html>

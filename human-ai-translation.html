@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人机协同翻译平台 - 跨语通</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- AOS 动画库 -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6', // 主色调：蓝色
+            secondary: '#10B981', // 辅助色：绿色
+            dark: '#1E293B',
+            light: '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          },
+          boxShadow: {
+            'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-gradient {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+      }
+      .hover-scale {
+        @apply transition-transform duration-300 hover:scale-105;
+      }
+      .transition-all-300 {
+        @apply transition-all duration-300;
+      }
+      .animate-fadeIn {
+        animation: fadeIn 0.8s ease-in-out;
+      }
+      .animate-slideUp {
+        animation: slideUp 0.8s ease-in-out;
+      }
+      .animate-pulse-slow {
+        animation: pulse 3s infinite;
+      }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .progress-bar {
+      transition: width 0.5s ease-in-out;
+    }
+    
+    .count-animation {
+      display: inline-block;
+    }
+    
+    .icon {
+      @apply w-12 h-12 rounded-full flex items-center justify-center text-white text-xl;
+    }
+    
+    .icon-ai {
+      @apply bg-primary;
+    }
+    
+    .icon-culture {
+      @apply bg-purple-500;
+    }
+    
+    .icon-dictionary {
+      @apply bg-yellow-500;
+    }
+    
+    .icon-channel {
+      @apply bg-pink-500;
+    }
+    
+    .icon-text {
+      @apply bg-blue-500;
+    }
+    
+    .icon-document {
+      @apply bg-green-500;
+    }
+    
+    .icon-audio {
+      @apply bg-red-500;
+    }
+    
+    .icon-collab {
+      @apply bg-indigo-500;
+    }
+    
+    .icon-service {
+      @apply bg-primary;
+    }
+    
+    .icon-experience {
+      @apply bg-secondary;
+    }
+    
+    .icon-quality {
+      @apply bg-yellow-500;
+    }
+    
+    .icon-support {
+      @apply bg-purple-500;
+    }
+    
+    .tag {
+      @apply transition-all duration-300;
+    }
+    
+    .tag--active {
+      @apply bg-primary text-white;
+    }
+    
+    .tag:hover:not(.tag--active) {
+      @apply bg-primary/10 text-primary;
+    }
+    
+    .btn--link {
+      @apply inline-flex items-center;
+    }
+    
+    .btn--link::after {
+      content: '';
+      @apply ml-1 w-4 h-4 bg-primary bg-contain bg-right bg-no-repeat;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 5l7 7-7 7'%3E%3C/path%3E%3C/svg%3E");
+    }
+    
+    .limited-time-alert {
+      @apply bg-gradient-to-r from-primary to-secondary text-white p-4 rounded-lg shadow-lg mb-6 flex items-center justify-between;
+    }
+    
+    .chat-message {
+      @apply p-4 rounded-lg mb-4 max-w-[80%];
+    }
+    
+    .chat-message-ai {
+      @apply bg-blue-50 text-gray-800 rounded-tl-none;
+    }
+    
+    .chat-message-human {
+      @apply bg-primary text-white rounded-tr-none ml-auto;
+    }
+    
+    .chat-avatar {
+      @apply w-10 h-10 rounded-full flex items-center justify-center text-white font-bold;
+    }
+    
+    .chat-avatar-ai {
+      @apply bg-blue-500;
+    }
+    
+    .chat-avatar-human {
+      @apply bg-green-500;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <!-- 1. 导航栏（Header） -->
+  <header class="header fixed top-0 left-0 right-0 bg-white bg-opacity-90 bg-blur z-50 shadow-sm">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <!-- 品牌Logo+名称 -->
+      <div class="header__logo flex items-center">
+        <div class="text-primary text-2xl font-bold mr-1">跨语通</div>
+        <div class="hidden md:block text-gray-400">跨境电商智能翻译专家</div>
+      </div>
+      
+      <!-- 导航菜单（桌面版） -->
+      <nav class="hidden md:flex items-center space-x-8">
+        <a href="index.html" class="text-gray-600 hover:text-primary transition-all-300">首页</a>
+        <a href="index.html#features" class="text-gray-600 hover:text-primary transition-all-300">功能</a>
+        <a href="index.html#products" class="text-gray-600 hover:text-primary transition-all-300">产品</a>
+        <a href="index.html#advantages" class="text-gray-600 hover:text-primary transition-all-300">优势</a>
+        <a href="index.html#service" class="text-gray-600 hover:text-primary transition-all-300">服务</a>
+      </nav>
+      
+      <!-- 头部功能区 -->
+      <div class="header__action flex items-center">
+        <button class="btn btn--upgrade hidden md:block bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-full transition-all-300 mr-4">
+          升级套餐
+        </button>
+        <button class="btn btn--download hidden md:block bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-full transition-all-300 mr-4">
+          下载APP
+        </button>
+        <div class="header__user-icon cursor-pointer text-gray-600 hover:text-primary transition-all-300">
+          <i class="fa fa-user-circle text-xl"></i>
+        </div>
+        
+        <!-- 移动端菜单按钮 -->
+        <button class="md:hidden ml-4 text-gray-600 hover:text-primary transition-all-300" id="mobileMenuBtn">
+          <i class="fa fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- 移动端菜单 -->
+    <div class="md:hidden bg-white shadow-md absolute w-full left-0 top-full transform -translate-y-full opacity-0 transition-all-300 invisible" id="mobileMenu">
+      <div class="container mx-auto px-4 py-3">
+        <nav class="flex flex-col space-y-4 py-4">
+          <a href="index.html" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">首页</a>
+          <a href="index.html#features" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">功能</a>
+          <a href="index.html#products" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">产品</a>
+          <a href="index.html#advantages" class="text-gray-600 hover:text-primary transition-all-300 py-2 border-b border-gray-100">优势</a>
+          <a href="index.html#service" class="text-gray-600 hover:text-primary transition-all-300 py-2">服务</a>
+        </nav>
+        <div class="flex flex-col space-y-3">
+          <button class="btn btn--upgrade w-full bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-full transition-all-300">
+            升级套餐
+          </button>
+          <button class="btn btn--download w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-full transition-all-300">
+            下载APP
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-16 pb-12">
+    <!-- 2. 页面标题区 -->
+    <section class="page-title py-8 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <div class="container mx-auto px-4">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-700">人机协同翻译平台</h1>
+        <p class="text-center text-gray-500 mt-2">结合AI翻译和人工校对的企业级解决方案，支持多人协作，术语统一管理</p>
+      </div>
+    </section>
+    
+    <!-- 3. 限时体验提示 -->
+    <section class="container mx-auto px-4 py-6">
+      <div class="limited-time-alert animate-fadeIn">
+        <div class="flex items-center">
+          <i class="fa fa-clock-o text-xl mr-3"></i>
+          <div>
+            <div class="font-semibold">限时体验</div>
+            <div class="text-sm opacity-90">您可以免费体验7天，体验期结束后需要升级套餐才能继续使用</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="font-semibold text-lg">6天23小时</div>
+          <div class="text-sm opacity-90">剩余时间</div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 4. 文档上传与审核区域 -->
+    <section class="container mx-auto px-4 py-8">
+      <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn mb-8">
+        <h3 class="text-xl font-semibold text-gray-700 mb-6">文档上传与审核</h3>
+        
+        <!-- 文档上传区域 -->
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-8 hover:border-primary transition-all-300 cursor-pointer" id="uploadArea">
+          <i class="fa fa-cloud-upload text-4xl text-gray-400 mb-4"></i>
+          <h4 class="text-lg font-medium text-gray-700 mb-2">点击或拖拽文件到此处上传</h4>
+          <p class="text-gray-500 mb-4">支持 Word、Excel、PDF、TXT 等格式</p>
+          <button class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-all-300">
+            选择文件
+          </button>
+          <input type="file" id="fileInput" class="hidden" accept=".doc,.docx,.xls,.xlsx,.pdf,.txt">
+        </div>
+        
+        <!-- 上传文件列表 -->
+        <div class="mb-8">
+          <h4 class="text-lg font-medium text-gray-700 mb-4">已上传文件</h4>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+              <div class="flex items-center">
+                <i class="fa fa-file-pdf-o text-red-500 text-xl mr-3"></i>
+                <div>
+                  <div class="font-medium text-gray-800">产品说明书.pdf</div>
+                  <div class="text-xs text-gray-500">2.4 MB · 2023-11-08</div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-3">
+                <button class="text-primary hover:text-primary/80 transition-all-300">
+                  <i class="fa fa-eye"></i>
+                </button>
+                <button class="text-gray-500 hover:text-gray-700 transition-all-300">
+                  <i class="fa fa-download"></i>
+                </button>
+                <button class="text-red-500 hover:text-red-700 transition-all-300">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 审核选项 -->
+        <div class="flex flex-wrap gap-4 mb-8">
+          <button class="flex-1 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-all-300 flex items-center justify-center" id="aiReviewBtn">
+            <i class="fa fa-robot mr-2"></i> AI审核
+          </button>
+          <button class="flex-1 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-all-300 flex items-center justify-center" id="expertReviewBtn">
+            <i class="fa fa-user-circle mr-2"></i> 专家审核
+          </button>
+        </div>
+      </div>
+      
+      <!-- AI审核结果区域 -->
+      <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn mb-8" id="aiReviewResult" style="display: none;">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-semibold text-gray-700">AI审核结果</h3>
+          <div class="flex items-center">
+            <span class="text-xs text-gray-500 mr-2">审核完成时间: 2023-11-08 15:30</span>
+            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">已完成</span>
+          </div>
+        </div>
+        
+        <!-- 审核统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="text-sm text-gray-500 mb-1">总字数</div>
+            <div class="text-2xl font-bold text-gray-800">2,456</div>
+          </div>
+          <div class="bg-yellow-50 p-4 rounded-lg">
+            <div class="text-sm text-gray-500 mb-1">风险点</div>
+            <div class="text-2xl font-bold text-yellow-600">3</div>
+          </div>
+          <div class="bg-red-50 p-4 rounded-lg">
+            <div class="text-sm text-gray-500 mb-1">错误点</div>
+            <div class="text-2xl font-bold text-red-600">2</div>
+          </div>
+        </div>
+        
+        <!-- 审核标记图例 -->
+        <div class="flex flex-wrap gap-4 mb-6">
+          <div class="flex items-center">
+            <span class="w-4 h-4 bg-yellow-200 rounded-sm mr-2"></span>
+            <span class="text-sm text-gray-600">风险点</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-4 h-4 bg-red-200 rounded-sm mr-2"></span>
+            <span class="text-sm text-gray-600">错误点</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-4 h-4 bg-green-200 rounded-sm mr-2"></span>
+            <span class="text-sm text-gray-600">已修改</span>
+          </div>
+        </div>
+        
+        <!-- 审核内容 -->
+        <div class="border border-gray-300 rounded-lg overflow-hidden">
+          <div class="bg-gray-50 px-4 py-3 border-b border-gray-300 flex justify-between items-center">
+            <h4 class="font-medium text-gray-700">审核内容预览</h4>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300 text-sm">
+                <i class="fa fa-download mr-1"></i> 导出报告
+              </button>
+              <button class="px-3 py-1 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all-300 text-sm">
+                <i class="fa fa-edit mr-1"></i> 开始修改
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-6 max-h-96 overflow-y-auto">
+            <div class="prose max-w-none">
+              <h2>无线蓝牙耳机用户手册</h2>
+              <h3>1. 产品介绍</h3>
+              <p>这款无线蓝牙耳机采用最新蓝牙5.0技术，提供高清音质和稳定连接。耳机内置高容量电池，单次充电可使用8小时，充电盒可额外提供16小时续航，总续航时间长达24小时。</p>
+              <p>耳机支持快充功能，充电15分钟即可使用2小时。IPX5防水等级设计，适合运动时使用。</p>
+              <h3>2. 功能特点</h3>
+              <ul>
+                <li>蓝牙5.0技术，连接稳定</li>
+                <li>高清音质，支持立体声</li>
+                <li class="bg-yellow-100 px-1 rounded relative">触控控制，操作便捷
+                  <div class="absolute -right-2 -top-2 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">!</div>
+                  <div class="mt-2 p-3 bg-yellow-50 rounded-lg text-sm">
+                    <div class="font-medium text-yellow-800 mb-1">风险提示</div>
+                    <p class="text-yellow-700">建议将"触控控制"改为"触控操作"，更符合英文表达习惯。</p>
+                  </div>
+                </li>
+                <li>语音助手兼容（Siri、Google Assistant）</li>
+                <li class="bg-red-100 px-1 rounded relative">IPX5防水等级
+                  <div class="absolute -right-2 -top-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">×</div>
+                  <div class="mt-2 p-3 bg-red-50 rounded-lg text-sm">
+                    <div class="font-medium text-red-800 mb-1">错误提示</div>
+                    <p class="text-red-700">IPX5防水等级描述不完整，建议补充具体防护范围，如"IPX5防水等级，可抵御喷射水流"。</p>
+                  </div>
+                </li>
+              </ul>
+              <h3>3. 使用方法</h3>
+              <p>首次使用前，请确保耳机已充电。打开充电盒，耳机将自动进入配对模式。打开手机蓝牙，搜索并选择"Wireless BT Headphone"进行配对。</p>
+              <p class="bg-yellow-100 px-1 rounded relative">配对成功后，耳机将自动连接到您的设备。如需手动连接，请按住多功能键3秒，直到听到提示音。
+                <div class="absolute -right-2 -top-2 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">!</div>
+                <div class="mt-2 p-3 bg-yellow-50 rounded-lg text-sm">
+                  <div class="font-medium text-yellow-800 mb-1">风险提示</div>
+                  <p class="text-yellow-700">"多功能键"的描述不够具体，建议明确说明是哪个按钮。</p>
+                </div>
+              </p>
+              <h3>4. 注意事项</h3>
+              <ul>
+                <li>请勿在潮湿环境中长时间使用</li>
+                <li class="bg-red-100 px-1 rounded relative">请勿将耳机暴露在高温环境中，如阳光直射的车内
+                  <div class="absolute -right-2 -top-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">×</div>
+                  <div class="mt-2 p-3 bg-red-50 rounded-lg text-sm">
+                    <div class="font-medium text-red-800 mb-1">错误提示</div>
+                    <p class="text-red-700">温度范围描述不完整，建议补充具体温度范围，如"请勿将耳机暴露在-10°C至45°C以外的环境中"。</p>
+                  </div>
+                </li>
+                <li>请勿使用刺激性化学清洁剂清洁耳机</li>
+                <li>请勿自行拆解或修理耳机</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 专家审核表单 -->
+      <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn" id="expertReviewForm" style="display: none;">
+        <h3 class="text-xl font-semibold text-gray-700 mb-6">提交专家审核</h3>
+        
+        <form id="expertReviewRequestForm">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label for="expertType" class="block text-sm font-medium text-gray-700 mb-1">专家类型</label>
+              <select id="expertType" class="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300">
+                <option value="">请选择专家类型</option>
+                <option value="technical">技术文档专家</option>
+                <option value="marketing">营销文案专家</option>
+                <option value="legal">法律文档专家</option>
+                <option value="medical">医疗文档专家</option>
+              </select>
+            </div>
+            <div>
+              <label for="priorityLevel" class="block text-sm font-medium text-gray-700 mb-1">优先级</label>
+              <select id="priorityLevel" class="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300">
+                <option value="normal">普通</option>
+                <option value="urgent">加急</option>
+                <option value="vip">VIP</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="mb-6">
+            <label for="reviewInstructions" class="block text-sm font-medium text-gray-700 mb-1">审核说明</label>
+            <textarea id="reviewInstructions" rows="4" class="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300" placeholder="请描述您的审核需求和关注点..."></textarea>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">参考文件（可选）</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary transition-all-300 cursor-pointer">
+              <i class="fa fa-paperclip text-gray-400 mr-2"></i>
+              <span class="text-gray-500">点击上传参考文件</span>
+              <input type="file" class="hidden">
+            </div>
+          </div>
+          
+          <div class="flex justify-end">
+            <button type="button" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition-all-300 mr-3">
+              取消
+            </button>
+            <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-all-300">
+              提交审核
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+    
+    <!-- 5. 人机协同翻译区域 -->
+    <section class="container mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- 左侧：项目管理 -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-semibold text-gray-700">项目管理</h3>
+              <button class="text-primary hover:text-primary/80 transition-all-300">
+                <i class="fa fa-plus"></i> 新建
+              </button>
+            </div>
+            
+            <!-- 项目列表 -->
+            <div class="space-y-3 mb-6">
+              <div class="bg-primary/10 border-l-4 border-primary p-3 rounded-lg">
+                <div class="font-medium text-gray-800">产品说明书翻译</div>
+                <div class="text-xs text-gray-500">2023-11-08 创建</div>
+              </div>
+              <div class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-all-300 cursor-pointer">
+                <div class="font-medium text-gray-800">亚马逊产品页面本地化</div>
+                <div class="text-xs text-gray-500">2023-11-05 创建</div>
+              </div>
+              <div class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-all-300 cursor-pointer">
+                <div class="font-medium text-gray-800">营销文案翻译</div>
+                <div class="text-xs text-gray-500">2023-11-01 创建</div>
+              </div>
+            </div>
+            
+            <!-- 团队成员 -->
+            <h4 class="text-lg font-medium text-gray-700 mb-3">团队成员</h4>
+            <div class="space-y-3 mb-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mr-2">
+                    我
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">我</div>
+                    <div class="text-xs text-gray-500">管理员</div>
+                  </div>
+                </div>
+                <i class="fa fa-check-circle text-green-500"></i>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold mr-2">
+                    AI
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">AI助手</div>
+                    <div class="text-xs text-gray-500">翻译员</div>
+                  </div>
+                </div>
+                <i class="fa fa-check-circle text-green-500"></i>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mr-2">
+                    +
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">邀请成员</div>
+                    <div class="text-xs text-gray-500">点击添加</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 术语库 -->
+            <h4 class="text-lg font-medium text-gray-700 mb-3">术语库</h4>
+            <div class="space-y-3">
+              <div class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-all-300 cursor-pointer">
+                <div class="font-medium text-gray-800">3C电子产品术语库</div>
+                <div class="text-xs text-gray-500">1,250 个术语</div>
+              </div>
+              <div class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-all-300 cursor-pointer">
+                <div class="font-medium text-gray-800">自定义术语库</div>
+                <div class="text-xs text-gray-500">86 个术语</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右侧：翻译工作区 -->
+        <div class="lg:col-span-3">
+          <div class="bg-white rounded-xl shadow-card p-6 animate-fadeIn delay-200">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-semibold text-gray-700">产品说明书翻译</h3>
+              <div class="flex space-x-2">
+                <button class="px-3 py-1 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300 text-sm">
+                  <i class="fa fa-download mr-1"></i> 导出
+                </button>
+                <button class="px-3 py-1 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all-300 text-sm">
+                  <i class="fa fa-save mr-1"></i> 保存
+                </button>
+              </div>
+            </div>
+            
+            <!-- 语言选择 -->
+            <div class="flex space-x-4 mb-6">
+              <div class="relative flex-1">
+                <select id="sourceLanguage" class="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300">
+                  <option value="zh" selected>中文</option>
+                  <option value="en">英语</option>
+                  <option value="es">西班牙语</option>
+                  <option value="fr">法语</option>
+                  <option value="de">德语</option>
+                  <option value="ja">日语</option>
+                  <option value="ko">韩语</option>
+                  <option value="ru">俄语</option>
+                </select>
+                <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <i class="fa fa-chevron-down text-gray-400"></i>
+                </div>
+              </div>
+              
+              <button id="swapLanguages" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 w-10 h-10 rounded-lg flex items-center justify-center transition-all-300">
+                <i class="fa fa-exchange"></i>
+              </button>
+              
+              <div class="relative flex-1">
+                <select id="targetLanguage" class="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300">
+                  <option value="en" selected>英语</option>
+                  <option value="zh">中文</option>
+                  <option value="es">西班牙语</option>
+                  <option value="fr">法语</option>
+                  <option value="de">德语</option>
+                  <option value="ja">日语</option>
+                  <option value="ko">韩语</option>
+                  <option value="ru">俄语</option>
+                </select>
+                <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <i class="fa fa-chevron-down text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 翻译工作区 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <!-- 原文 -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="font-medium text-gray-700">原文</h4>
+                  <div class="text-xs text-gray-500">256 字符</div>
+                </div>
+                <div class="border border-gray-300 rounded-lg p-4 h-96 overflow-y-auto">
+                  <div class="prose max-w-none">
+                    <h2>无线蓝牙耳机用户手册</h2>
+                    <h3>1. 产品介绍</h3>
+                    <p>这款无线蓝牙耳机采用最新蓝牙5.0技术，提供高清音质和稳定连接。耳机内置高容量电池，单次充电可使用8小时，充电盒可额外提供16小时续航，总续航时间长达24小时。</p>
+                    <p>耳机支持快充功能，充电15分钟即可使用2小时。IPX5防水等级设计，适合运动时使用。</p>
+                    <h3>2. 功能特点</h3>
+                    <ul>
+                      <li>蓝牙5.0技术，连接稳定</li>
+                      <li>高清音质，支持立体声</li>
+                      <li>触控控制，操作便捷</li>
+                      <li>语音助手兼容（Siri、Google Assistant）</li>
+                      <li>IPX5防水等级</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 译文 -->
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="font-medium text-gray-700">译文</h4>
+                  <div class="text-xs text-gray-500">289 字符</div>
+                </div>
+                <div class="border border-gray-300 rounded-lg p-4 h-96 overflow-y-auto">
+                  <div class="prose max-w-none">
+                    <h2>Wireless Bluetooth Headphone User Manual</h2>
+                    <h3>1. Product Introduction</h3>
+                    <p>This wireless Bluetooth headphone adopts the latest Bluetooth 5.0 technology, providing high-definition sound quality and stable connection. The headphone has a built-in high-capacity battery that can be used for 8 hours on a single charge. The charging case can provide an additional 16 hours of battery life, with a total battery life of up to 24 hours.</p>
+                    <p>The headphone supports fast charging function, charging for 15 minutes can be used for 2 hours. IPX5 waterproof rating design, suitable for use during exercise.</p>
+                    <h3>2. Features</h3>
+                    <ul>
+                      <li>Bluetooth 5.0 technology, stable connection</li>
+                      <li>High-definition sound quality, supporting stereo</li>
+                      <li>Touch control, easy operation</li>
+                      <li>Voice assistant compatible (Siri, Google Assistant)</li>
+                      <li>IPX5 waterproof rating</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 人机协同区域 -->
+            <div class="border border-gray-300 rounded-lg overflow-hidden">
+              <div class="bg-gray-50 px-4 py-3 border-b border-gray-300 flex justify-between items-center">
+                <h4 class="font-medium text-gray-700">人机协同</h4>
+                <div class="flex items-center">
+                  <span class="text-xs text-gray-500 mr-2">AI助手已就绪</span>
+                  <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                </div>
+              </div>
+              
+              <!-- 聊天记录 -->
+              <div class="h-64 p-4 overflow-y-auto" id="chatContainer">
+                <!-- AI消息 -->
+                <div class="flex mb-4">
+                  <div class="chat-avatar chat-avatar-ai mr-2">
+                    <i class="fa fa-robot"></i>
+                  </div>
+                  <div class="chat-message chat-message-ai">
+                    <div class="font-medium mb-1">AI助手</div>
+                    <p>我已完成初步翻译。您可以检查翻译结果，如有需要修改的地方，请告诉我具体位置和修改意见。</p>
+                  </div>
+                </div>
+                
+                <!-- 人工消息 -->
+                <div class="flex mb-4 justify-end">
+                  <div class="chat-message chat-message-human">
+                    <div class="font-medium mb-1">我</div>
+                    <p>请将"触控控制，操作便捷"改为"触控操作，简单便捷"</p>
+                  </div>
+                  <div class="chat-avatar chat-avatar-human ml-2">
+                    <i class="fa fa-user"></i>
+                  </div>
+                </div>
+                
+                <!-- AI消息 -->
+                <div class="flex mb-4">
+                  <div class="chat-avatar chat-avatar-ai mr-2">
+                    <i class="fa fa-robot"></i>
+                  </div>
+                  <div class="chat-message chat-message-ai">
+                    <div class="font-medium mb-1">AI助手</div>
+                    <p>已修改："Touch control, easy operation" → "Touch operation, simple and convenient"</p>
+                    <p>还有其他需要修改的地方吗？</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 输入框 -->
+              <div class="p-4 border-t border-gray-300">
+                <div class="flex">
+                  <input type="text" id="chatInput" class="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300" placeholder="输入您的修改意见...">
+                  <button id="sendBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-r-lg transition-all-300">
+                    <i class="fa fa-paper-plane"></i>
+                  </button>
+                </div>
+                <div class="flex justify-between mt-2 text-xs text-gray-500">
+                  <div>
+                    <button class="text-primary hover:text-primary/80 transition-all-300 mr-3">
+                      <i class="fa fa-magic mr-1"></i> AI优化
+                    </button>
+                    <button class="text-primary hover:text-primary/80 transition-all-300">
+                      <i class="fa fa-book mr-1"></i> 术语建议
+                    </button>
+                  </div>
+                  <div>
+                    <button class="text-primary hover:text-primary/80 transition-all-300">
+                      <i class="fa fa-history mr-1"></i> 查看历史记录
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 5. 人机协同翻译特点 -->
+    <section class="py-12 bg-white">
+      <div class="container mx-auto px-4">
+        <h2 class="section__title text-3xl font-bold text-center text-gray-700 mb-12">人机协同翻译特点</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- 特点1：AI辅助翻译 -->
+          <div class="feature-card bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all-300 hover-scale">
+            <div class="icon icon-collab mb-4">
+              <i class="fa fa-robot"></i>
+            </div>
+            <h3 class="feature-card__title text-xl font-semibold text-gray-700 mb-3">AI辅助翻译</h3>
+            <p class="feature-card__desc text-gray-600">
+              AI自动完成初步翻译，大幅提高翻译效率，减少人工工作量，让译员专注于质量把控。
+            </p>
+          </div>
+          
+          <!-- 特点2：多人协作 -->
+          <div class="feature-card bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all-300 hover-scale">
+            <div class="icon icon-collab mb-4">
+              <i class="fa fa-users"></i>
+            </div>
+            <h3 class="feature-card__title text-xl font-semibold text-gray-700 mb-3">多人协作</h3>
+            <p class="feature-card__desc text-gray-600">
+              支持多团队成员同时参与翻译项目，分配不同任务，实时协作，提高工作效率。
+            </p>
+          </div>
+          
+          <!-- 特点3：术语统一 -->
+          <div class="feature-card bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all-300 hover-scale">
+            <div class="icon icon-collab mb-4">
+              <i class="fa fa-book"></i>
+            </div>
+            <h3 class="feature-card__title text-xl font-semibold text-gray-700 mb-3">术语统一管理</h3>
+            <p class="feature-card__desc text-gray-600">
+              建立企业专属术语库，确保翻译过程中术语的一致性和准确性，提升品牌形象。
+            </p>
+          </div>
+          
+          <!-- 特点4：版本控制 -->
+          <div class="feature-card bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all-300 hover-scale">
+            <div class="icon icon-collab mb-4">
+              <i class="fa fa-history"></i>
+            </div>
+            <h3 class="feature-card__title text-xl font-semibold text-gray-700 mb-3">版本控制</h3>
+            <p class="feature-card__desc text-gray-600">
+              记录所有修改历史，支持版本对比和回滚，确保翻译质量可追溯，便于团队审核。
+            </p>
+          </div>
+          
+          <!-- 特点5：翻译记忆 -->
+          <div class="feature-card bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all-300 hover-scale">
+            <div class="icon icon-collab mb-4">
+              <i class="fa fa-database"></i>
+            </div>
+            <h3 class="feature-card__title text-xl font-semibold text-gray-700 mb-3">翻译记忆库</h3>
+            <p class="feature-card__desc text-gray-600">
+              自动存储已翻译的内容，形成企业专属翻译记忆库，提高重复内容的翻译效率。
+            </p>
+          </div>
+          
+          <!-- 特点6：质量保证 -->
+          <div class="feature-card bg-white rounded-xl shadow-card p-6 hover:shadow-card-hover transition-all-300 hover-scale">
+            <div class="icon icon-collab mb-4">
+              <i class="fa fa-check-circle"></i>
+            </div>
+            <h3 class="feature-card__title text-xl font-semibold text-gray-700 mb-3">质量保证</h3>
+            <p class="feature-card__desc text-gray-600">
+              结合AI质量检测和人工校对，确保翻译结果准确、流畅、符合目标语言表达习惯。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 5. 页脚（Footer） -->
+  <footer class="footer bg-gray-700 text-white py-12">
+    <div class="container mx-auto px-4">
+      <div class="footer__grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <!-- 列1：品牌介绍 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-xl font-bold mb-4">跨语通</h3>
+          <p class="footer__column-desc text-gray-300 mb-6">
+            AI驱动的跨境电商智能翻译工具，帮助中国卖家走向全球市场，提升产品转化率。
+          </p>
+          <div class="flex space-x-4">
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-weixin text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-weibo text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-linkedin text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-300 hover:text-white transition-all-300">
+              <i class="fa fa-youtube-play text-xl"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- 列2：产品服务 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">产品服务</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="text-translation.html" class="footer__link text-gray-300 hover:text-white transition-all-300">文本翻译</a></li>
+            <li><a href="document-translation.html" class="footer__link text-gray-300 hover:text-white transition-all-300">文档翻译</a></li>
+            <li><a href="audio-video-translation.html" class="footer__link text-gray-300 hover:text-white transition-all-300">音视频翻译</a></li>
+            <li><a href="human-ai-translation.html" class="footer__link text-gray-300 hover:text-white transition-all-300">人机协同翻译</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">行业解决方案</a></li>
+          </ul>
+        </div>
+        
+        <!-- 列3：代理与加盟 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">代理与加盟</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">代理与加盟</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">API开放平台</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">合作伙伴</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">渠道政策</a></li>
+          </ul>
+        </div>
+        
+        <!-- 列4：帮助中心 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">帮助中心</h3>
+          <ul class="footer__column-list space-y-2">
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">常见问题</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">使用教程</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">视频教程</a></li>
+            <li><a href="#" class="footer__link text-gray-300 hover:text-white transition-all-300">意见反馈</a></li>
+          </ul>
+        </div>
+        
+        <!-- 列5：联系我们 -->
+        <div class="footer__column">
+          <h3 class="footer__column-title text-lg font-semibold mb-4">联系我们</h3>
+          <div class="space-y-6">
+            <div class="flex items-start">
+              <div class="icon icon-service mt-1">
+                <i class="fa fa-phone"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-300">电话咨询</div>
+                <div class="text-gray-400">400-123-4567</div>
+                <div class="text-xs text-gray-500">周一至周日 9:00-21:00</div>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <div class="icon icon-experience mt-1">
+                <i class="fa fa-envelope-o"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-300">邮箱咨询</div>
+                <div class="text-gray-400">support@kuayutong.com</div>
+                <div class="text-xs text-gray-500">24小时内回复</div>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <div class="icon icon-quality mt-1">
+                <i class="fa fa-wechat"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-300">微信咨询</div>
+                <div class="text-gray-400">Kuayutong001</div>
+                <div class="text-xs text-gray-500">扫码添加客服微信</div>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <div class="icon icon-support mt-1">
+                <i class="fa fa-map-marker"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-300">公司地址</div>
+                <div class="text-gray-400">深圳市南山区科技园南区高新南七道数字技术大厦15楼</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 版权信息 -->
+      <div class="footer__copyright border-t border-gray-600 mt-12 pt-8 text-center text-gray-400 text-sm">
+        <p>© 2025 跨语通 - 跨境电商智能翻译专家. 保留所有权利.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 初始化AOS动画库
+    document.addEventListener('DOMContentLoaded', function() {
+      AOS.init({
+        duration: 800,
+        easing: 'ease-in-out',
+        once: true
+      });
+      
+      // 移动端菜单切换
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      
+      mobileMenuBtn.addEventListener('click', function() {
+        if (mobileMenu.classList.contains('invisible')) {
+          mobileMenu.classList.remove('-translate-y-full', 'opacity-0', 'invisible');
+          mobileMenu.classList.add('translate-y-0', 'opacity-100', 'visible');
+        } else {
+          mobileMenu.classList.add('-translate-y-full', 'opacity-0', 'invisible');
+          mobileMenu.classList.remove('translate-y-0', 'opacity-100', 'visible');
+        }
+      });
+      
+      // 语言切换功能
+      const swapLanguagesBtn = document.getElementById('swapLanguages');
+      const sourceLanguage = document.getElementById('sourceLanguage');
+      const targetLanguage = document.getElementById('targetLanguage');
+      
+      swapLanguagesBtn.addEventListener('click', function() {
+        const temp = sourceLanguage.value;
+        sourceLanguage.value = targetLanguage.value;
+        targetLanguage.value = temp;
+        
+        // 这里可以添加实际的语言切换逻辑
+      });
+      
+      // 聊天功能
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const chatContainer = document.getElementById('chatContainer');
+      
+      function sendMessage() {
+        const message = chatInput.value.trim();
+        if (message) {
+          // 添加用户消息
+          const userMessageHTML = `
+            <div class="flex mb-4 justify-end">
+              <div class="chat-message chat-message-human">
+                <div class="font-medium mb-1">我</div>
+                <p>${message}</p>
+              </div>
+              <div class="chat-avatar chat-avatar-human ml-2">
+                <i class="fa fa-user"></i>
+              </div>
+            </div>
+          `;
+          chatContainer.insertAdjacentHTML('beforeend', userMessageHTML);
+          
+          // 清空输入框
+          chatInput.value = '';
+          
+          // 滚动到底部
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+          
+          // 模拟AI回复
+          setTimeout(() => {
+            const aiResponses = [
+              "好的，我已理解您的修改意见。",
+              "我已完成修改，请检查翻译结果。",
+              "这个建议很好，我已经更新了翻译内容。",
+              "感谢您的反馈，我会根据您的要求进行调整。"
+            ];
+            
+            const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+            
+            const aiMessageHTML = `
+              <div class="flex mb-4">
+                <div class="chat-avatar chat-avatar-ai mr-2">
+                  <i class="fa fa-robot"></i>
+                </div>
+                <div class="chat-message chat-message-ai">
+                  <div class="font-medium mb-1">AI助手</div>
+                  <p>${randomResponse}</p>
+                </div>
+              </div>
+            `;
+            
+            chatContainer.insertAdjacentHTML('beforeend', aiMessageHTML);
+            
+            // 滚动到底部
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+          }, 1000);
+        }
+      }
+      
+      sendBtn.addEventListener('click', sendMessage);
+      
+      chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+      
+      // 倒计时功能
+      function updateCountdown() {
+        // 这里可以添加实际的倒计时逻辑
+        // 目前只是一个静态显示
+      }
+      
+      // 初始化倒计时
+      updateCountdown();
+      
+      // 文档上传功能
+      const uploadArea = document.getElementById('uploadArea');
+      const fileInput = document.getElementById('fileInput');
+      
+      uploadArea.addEventListener('click', function() {
+        fileInput.click();
+      });
+      
+      uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('border-primary');
+      });
+      
+      uploadArea.addEventListener('dragleave', function() {
+        uploadArea.classList.remove('border-primary');
+      });
+      
+      uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary');
+        
+        if (e.dataTransfer.files.length) {
+          handleFiles(e.dataTransfer.files);
+        }
+      });
+      
+      fileInput.addEventListener('change', function() {
+        if (this.files.length) {
+          handleFiles(this.files);
+        }
+      });
+      
+      function handleFiles(files) {
+        // 这里只是一个模拟，实际应用中应该上传文件到服务器
+        const file = files[0];
+        console.log('上传文件:', file.name);
+        
+        // 显示上传成功提示
+        alert(`文件 "${file.name}" 上传成功！`);
+      }
+      
+      // 审核功能
+      const aiReviewBtn = document.getElementById('aiReviewBtn');
+      const expertReviewBtn = document.getElementById('expertReviewBtn');
+      const aiReviewResult = document.getElementById('aiReviewResult');
+      const expertReviewForm = document.getElementById('expertReviewForm');
+      const expertReviewRequestForm = document.getElementById('expertReviewRequestForm');
+      
+      aiReviewBtn.addEventListener('click', function() {
+        // 显示AI审核结果区域
+        aiReviewResult.style.display = 'block';
+        expertReviewForm.style.display = 'none';
+        
+        // 模拟AI审核过程
+        alert('AI审核已开始，请稍候...');
+        
+        // 滚动到AI审核结果区域
+        setTimeout(() => {
+          aiReviewResult.scrollIntoView({ behavior: 'smooth' });
+        }, 1000);
+      });
+      
+      expertReviewBtn.addEventListener('click', function() {
+        // 显示专家审核表单
+        expertReviewForm.style.display = 'block';
+        aiReviewResult.style.display = 'none';
+        
+        // 滚动到专家审核表单区域
+        expertReviewForm.scrollIntoView({ behavior: 'smooth' });
+      });
+      
+      // 专家审核表单提交
+      expertReviewRequestForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const expertType = document.getElementById('expertType').value;
+        const priorityLevel = document.getElementById('priorityLevel').value;
+        const reviewInstructions = document.getElementById('reviewInstructions').value;
+        
+        if (!expertType) {
+          alert('请选择专家类型');
+          return;
+        }
+        
+        // 模拟表单提交
+        alert(`专家审核请求已提交！\n专家类型: ${expertType}\n优先级: ${priorityLevel}\n审核说明: ${reviewInstructions}`);
+        
+        // 重置表单
+        expertReviewRequestForm.reset();
+        
+        // 隐藏专家审核表单
+        expertReviewForm.style.display = 'none';
+      });
+    });
+  </script>
+</body>
+</html>
